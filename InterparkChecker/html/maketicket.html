@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+
+	        //달력 로드
+	        $("#calendar").load("http://forest.maketicket.co.kr/camp/reserve/calendar.jsp", { idkey: "5M4240", gd_seq: "GD84", yyyymmdd: "20190525", sd_date: "20190525" });
+
+        });
+
+        function calendar_move(yyyymmdd){
+
+	        //달력 로드
+            $("#calendar").load("http://forest.maketicket.co.kr/camp/reserve/calendar.jsp", { idkey: "5M4240", gd_seq: "GD84", yyyymmdd: yyyymmdd, sd_date: yyyymmdd });
+        }
+    </script>
+</head>
+<body>
+    <div id="calendar">
+    </div>
+</body>
+</html>
