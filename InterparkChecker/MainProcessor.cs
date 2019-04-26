@@ -57,6 +57,22 @@ namespace InterparkChecker
                 string selectedText = text.Substring(startIndex, endIndex - startIndex);
 
                 resultText += selectedText + Environment.NewLine;
+
+                // 사이트 정보
+                string span = "<span>";
+                List<string> siteList = ParamHelper.GetSiteList(type);
+
+                foreach (var site in siteList)
+                {
+                    startIndex = selectedText.IndexOf(span);
+                    startIndex += span.Length;
+
+                    endIndex = selectedText.IndexOf(site);
+
+                    
+                }
+
+                
             }
 
             return resultText;
