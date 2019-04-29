@@ -28,6 +28,9 @@ namespace InterparkChecker
 
                     break;
                 case CampName.왕송호수:
+                    paramList.Add(new Querystring("idkey", "5M4280"));
+                    paramList.Add(new Querystring("gd_seq", "GD91"));
+
                     break;
 
 
@@ -49,7 +52,7 @@ namespace InterparkChecker
 
                     break;
                 case CampName.초막골:
-                    list = new List<string>() { "글램-고급", "글램-일반", "야영장(자갈)", "야영장(테크)" };
+                    list = new List<string>() { "글램-고급", "글램-일반", "야영장(자갈)", "야영장(데크)" };
 
                     break;
                 case CampName.왕송호수:

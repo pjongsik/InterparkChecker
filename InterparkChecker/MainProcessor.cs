@@ -10,9 +10,9 @@ namespace InterparkChecker
     {
         const string _url = @"http://forest.maketicket.co.kr/camp/reserve/calendar.jsp";
 
-        public static string CheckProcessor(CampName type, List<string> dateList)
+        public static List<ResultSet> CheckProcessor(CampName type, List<string> dateList)
         {
-            string resultText = string.Empty;
+            List<ResultSet> resultList = new List<ResultSet>();
 
             if (dateList == null || dateList.Count == 0)
             {
@@ -33,17 +33,17 @@ namespace InterparkChecker
                 var text = result.Result;
 
                 // 자리 확인
-                resultText = UsableSiteChecker(type, text, dateList.Where(x => x.Substring(0, 6) == yyyymm).ToList());
+                resultList = UsableSiteChecker(type, text, dateList.Where(x => x.Substring(0, 6) == yyyymm).ToList());
             }
 
-            return resultText;
+            return resultList;
         }
 
-        private static string UsableSiteChecker(CampName type, string text, List<string> dateList)
+        private static List<ResultSet> UsableSiteChecker(CampName type, string text, List<string> dateList)
         {
-            string resultText = string.Empty;
+            List<ResultSet> resultList = new List<ResultSet>();
 
-            //날짜 < strong > 4 </ strong >
+            //날짜 <strong>4</strong>
             foreach (var date in dateList)
             {
                 string searchText = string.Format("<strong>{0}</strong>", Int32.Parse(date.Substring(6, 2)));
@@ -56,26 +56,42 @@ namespace InterparkChecker
 
                 string selectedText = text.Substring(startIndex, endIndex - startIndex);
 
-                resultText += selectedText + Environment.NewLine;
-
-                // 사이트 정보
-                string span = "<span>";
+                // 사이트 정보 , 남은수량 태그 <span>0</span>
+                string remainCount = string.Empty;
+         
+                string spanStartText = "<span>";
+                string spanEndText = "</span>{0}";
                 List<string> siteList = ParamHelper.GetSiteList(type);
 
                 foreach (var site in siteList)
                 {
-                    startIndex = selectedText.IndexOf(span);
-                    startIndex += span.Length;
+                    startIndex = selectedText.IndexOf(spanStartText);
+                    startIndex += spanStartText.Length;
+                    endIndex = selectedText.IndexOf(string.Format(spanEndText, site));
 
-                    endIndex = selectedText.IndexOf(site);
+                    remainCount = selectedText.Substring(startIndex, endIndex - startIndex);
 
+                    resultList.Add(new ResultSet(site, Int32.Parse(remainCount)));
                     
-                }
+                    Console.WriteLine("{0} : {1}", site, remainCount);
 
-                
+                    selectedText = selectedText.Substring(endIndex);
+                }
             }
 
-            return resultText;
+            return resultList;
         }
+    }
+
+    public class ResultSet
+    {
+        public ResultSet(string name, int count)
+        {
+            SiteName = name;
+            RemainCount = count;
+        }
+
+        public string SiteName { get; set; }
+        public int RemainCount { get; set; }
     }
 }

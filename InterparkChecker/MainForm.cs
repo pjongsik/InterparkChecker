@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace InterparkChecker
@@ -14,6 +15,23 @@ namespace InterparkChecker
         public MainForm()
         {
             InitializeComponent();
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            InitializeControls();
+        }
+
+        private void InitializeControls()
+        {
+            // camplist
+            var campList = Enum.GetValues(typeof(CampName)).Cast<CampName>();
+            foreach (var type in campList)
+            {
+                clbCamp.Items.Add(type.ToString());
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -85,16 +103,154 @@ namespace InterparkChecker
 
         private void button5_Click(object sender, EventArgs e)
         {
+            _keepruning = true;
+            backgroundWorker.RunWorkerAsync();
+        }
+
+        //
+        bool _keepruning = true;
+
+        private void StartSearch()
+        {
             try
             {
-                var resultText = MainProcessor.CheckProcessor(CampName.용자휴, new List<string>() { "20190505" });
-                MessageBox.Show(resultText);
+                while (_keepruning)
+                {
+                    // datelist
+                    List<string> dateList = new List<string>();
+                    foreach (var date in lbDates.Items)
+                    {
+                        dateList.Add(date.ToString());
+                    }
+
+                    // checkbox
+                    foreach (var check in clbCamp.CheckedItems)
+                    {
+                        var site = check.ToString();
+                        CampName campName;
+                        Enum.TryParse(site, out campName);
+                        var resultText = MainProcessor.CheckProcessor(campName, dateList);
+
+                        DisplayTextBox(resultText);
+
+                    }
+
+                    int interval = Int32.Parse(tbInterval.Text);
+                    Thread.Sleep(interval * 1000);
+                }
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
+        }
 
+        private void DisplayTextBox(List<ResultSet> resultText)
+        {
+        
+            if (rtbResult.InvokeRequired)
+            {
+                rtbResult.BeginInvoke(new Action(() => rtbResult.Text += MakeString(resultText)));
+                rtbResult.BeginInvoke(new Action(() => rtbResult.ScrollToCaret()));
+            }
+            else
+            {
+                rtbResult.Text += MakeString(resultText);
+                rtbResult.ScrollToCaret();
+            }
+
+            //
+            if (resultText.Any(x => x.RemainCount > 0))
+            {
+                var showList = resultText.Where(x => x.RemainCount > 0).ToList();
+                
+                MessageBox.Show(MakeString(showList));
+            }
+        }
+
+        private string MakeString(List<ResultSet> resultText)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var data in resultText)
+            {
+                sb.AppendLine((string.Format("{0} : {1}", data.SiteName, data.RemainCount)));
+            }
+
+            return sb.ToString();
+        }
+
+        private void btnAddDate_Click(object sender, EventArgs e)
+        {
+            string selectedDate = dateSelector.Value.Date.ToString("yyyyMMdd");
+
+            bool isExists = false;
+            foreach (var date in lbDates.Items)
+            {
+                if (selectedDate == date.ToString())
+                    isExists = true;
+            }
+
+            if (! isExists)
+                lbDates.Items.Add(selectedDate);
+        }
+
+        private void btnDeleteDate_Click(object sender, EventArgs e)
+        {
+            var deleteIndex = lbDates.SelectedIndex;
+            if (deleteIndex > -1)
+                lbDates.Items.RemoveAt(deleteIndex);
+        }
+
+        private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            StartSearch();
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            _keepruning = false;
+        }
+
+        private void notifyIcon_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+           
+
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            e.Cancel = true;
+
+            this.Hide();
+
+            notifyIcon.Visible = true;
+
+        }
+
+        private void 종료ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            notifyIcon.Visible = false;
+
+            this.Dispose();
+
+            Application.Exit();
+            Application.ExitThread();
+            Environment.Exit(0);
+        }
+
+        private void notifyIcon_DoubleClick(object sender, EventArgs e)
+        {
+            this.Visible = true;
+            this.ShowInTaskbar = true;
+
+            if (this.WindowState == FormWindowState.Minimized)
+                this.WindowState = FormWindowState.Normal; // 최소화를 멈춘다 
+
+            this.Activate(); // 폼을 활성화 시킨다
+
+            this.notifyIcon.Visible = false;
         }
     }
 }
