@@ -90,15 +90,20 @@ namespace InterparkChecker
         private void button4_Click(object sender, EventArgs e)
         {
             
-            string url = "http://forest.maketicket.co.kr/camp/reserve/calendar.jsp";
+            string url = "http://ticket.interpark.com/Ticket/Goods/GoodsInfoJSON.asp";
             List<Querystring> paramList = new List<Querystring>();
-            paramList.Add(new Querystring("idkey", "5M4240"));
-            paramList.Add(new Querystring("gd_seq", "GD84"));
-            paramList.Add(new Querystring("yyyymmdd", "20190524"));
-            paramList.Add(new Querystring("sd_date", "20190524"));
-            var resultText = Scrapper.RequestUrlMsdn(url, Method.PORT, paramList);
+            paramList.Add(new Querystring("Flag", "UseCheckIn"));
+            paramList.Add(new Querystring("GoodsCode", "18007398"));
+            paramList.Add(new Querystring("PlaceCode", "18000660"));
+            paramList.Add(new Querystring("PlayDate", "20190505"));
+            paramList.Add(new Querystring("Callback", "fnPlayDateChangeCallBack"));
+            //var resultList = Scrapper.RequestHttpClient(url, Method.GET, paramList);
+            var result = System.Threading.Tasks.Task.Run<string>(async () => await Scrapper.RequestHttpClient(url, Method.GET, paramList));
+            result.Wait();
+            var text = result.Result;
 
-            MessageBox.Show(resultText);
+            // DisplayTextBox(MakeString(resultList));
+            //MessageBox.Show(resultText);
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -129,10 +134,24 @@ namespace InterparkChecker
                         var site = check.ToString();
                         CampName campName;
                         Enum.TryParse(site, out campName);
-                        var resultText = MainProcessor.CheckProcessor(campName, dateList);
 
-                        DisplayTextBox(resultText);
+                        foreach (var date in dateList) // 날짜별 표시를 위해
+                        {
+                            var resultList = MainProcessor.CheckProcessor(campName, new List<string> { date });
 
+                            DisplayTextBox(string.Format(">> {0} [{1}] ----", check.ToString(), date));
+                            if (resultList.Any(x => x.RemainCount == 0))
+                            {
+                                DisplayTextBox("---- FULL !! " + Environment.NewLine);
+                            }
+                            else
+                            {
+                                // 예약가능알림
+                                DisplayTextBox(MakeString(resultList));
+                                AlertUsableSite(resultList);
+                            }
+                            
+                        }
                     }
 
                     int interval = Int32.Parse(tbInterval.Text);
@@ -146,26 +165,27 @@ namespace InterparkChecker
             }
         }
 
-        private void DisplayTextBox(List<ResultSet> resultText)
+        private void AlertUsableSite(List<ResultSet> resultList)
         {
-        
+            if (resultList.Any(x => x.RemainCount > 0))
+            {
+                var usableList = resultList.Where(x => x.RemainCount > 0).ToList();
+
+                MessageBox.Show(MakeString(usableList));
+            }
+        }
+
+        private void DisplayTextBox(string displayText)
+        {
             if (rtbResult.InvokeRequired)
             {
-                rtbResult.BeginInvoke(new Action(() => rtbResult.Text += MakeString(resultText)));
+                rtbResult.BeginInvoke(new Action(() => rtbResult.Text += displayText));
                 rtbResult.BeginInvoke(new Action(() => rtbResult.ScrollToCaret()));
             }
             else
             {
-                rtbResult.Text += MakeString(resultText);
+                rtbResult.Text += displayText;
                 rtbResult.ScrollToCaret();
-            }
-
-            //
-            if (resultText.Any(x => x.RemainCount > 0))
-            {
-                var showList = resultText.Where(x => x.RemainCount > 0).ToList();
-                
-                MessageBox.Show(MakeString(showList));
             }
         }
 
@@ -213,11 +233,7 @@ namespace InterparkChecker
             _keepruning = false;
         }
 
-        private void notifyIcon_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-           
-
-        }
+        #region notifyIcon 설정
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -252,5 +268,7 @@ namespace InterparkChecker
 
             this.notifyIcon.Visible = false;
         }
+
+        #endregion
     }
 }
