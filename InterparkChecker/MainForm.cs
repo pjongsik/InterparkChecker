@@ -89,7 +89,29 @@ namespace InterparkChecker
 
         private void button4_Click(object sender, EventArgs e)
         {
+            CallInterparkCalendar();
+            CallInterparkSelectDate();
+        }
+
+        private void CallInterparkCalendar()
+        {
+         //   /Ticket/Goods/ifrCalendar.asp?GoodsCode=18007398&PlaceCode=18000660&OnlyDeliver=68006&DBDay=12&ExpressDelyDay=0&YM=201905
+            string url = "http://ticket.interpark.com/Ticket/Goods/ifrCalendar.asp";
+            List<Querystring> paramList = new List<Querystring>();
+            paramList.Add(new Querystring("GoodsCode", "18007398"));
+            paramList.Add(new Querystring("PlaceCode", "18000660"));
+            paramList.Add(new Querystring("OnlyDeliver", "68006"));
+            paramList.Add(new Querystring("DBDay", "12"));
+            paramList.Add(new Querystring("ExpressDelyDay", "0"));
+            paramList.Add(new Querystring("YM", "201905"));
             
+            var result = System.Threading.Tasks.Task.Run<string>(async () => await Scrapper.RequestHttpClient(url, Method.GET, paramList));
+            result.Wait();
+            var text = result.Result;
+        }
+
+        private void CallInterparkSelectDate()
+        {
             string url = "http://ticket.interpark.com/Ticket/Goods/GoodsInfoJSON.asp";
             List<Querystring> paramList = new List<Querystring>();
             paramList.Add(new Querystring("Flag", "UseCheckIn"));
@@ -97,14 +119,13 @@ namespace InterparkChecker
             paramList.Add(new Querystring("PlaceCode", "18000660"));
             paramList.Add(new Querystring("PlayDate", "20190505"));
             paramList.Add(new Querystring("Callback", "fnPlayDateChangeCallBack"));
-            //var resultList = Scrapper.RequestHttpClient(url, Method.GET, paramList);
+            
             var result = System.Threading.Tasks.Task.Run<string>(async () => await Scrapper.RequestHttpClient(url, Method.GET, paramList));
             result.Wait();
             var text = result.Result;
 
-            // DisplayTextBox(MakeString(resultList));
-            //MessageBox.Show(resultText);
         }
+
 
         private void button5_Click(object sender, EventArgs e)
         {
